@@ -9,7 +9,7 @@ import { GameComponent } from './components/game/game.component';
 
 const appRoutes: Routes = [
   { path: '', component: LoginComponent },
-  { path: 'game', component: GameComponent, data: { userName: 'userName'} },
+  { path: 'game', component: GameComponent, data: { userName: 'userName' } },
 ];
 
 @NgModule({
@@ -20,9 +20,7 @@ const appRoutes: Routes = [
     ReactiveFormsModule,
     RouterModule.forRoot(appRoutes),
   ],
-  exports: [
-    RouterModule
-  ],
+  exports: [RouterModule],
   providers: [],
   bootstrap: [AppComponent],
 })

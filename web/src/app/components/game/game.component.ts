@@ -8,10 +8,9 @@ import { Carta } from '../../models/carta';
   styleUrls: ['./game.component.css'],
 })
 export class GameComponent implements OnInit {
-  userName: string = "";
+  userName: string = '';
 
   constructor(private route: ActivatedRoute, private router: Router) {
-    var carta = new Carta(2, "palo");
   }
 
   ngOnInit(): void {
