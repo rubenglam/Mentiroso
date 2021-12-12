@@ -1,0 +1,37 @@
+<div class="h-100 py-5 px-5 bg-dark text-white">
+  <div class="d-flex h-100 justify-content-center">
+    <div
+      class="card align-self-center py-5 pb-3 px-5 shadow-sm"
+      style="width: 30rem"
+    >
+      <div class="card-body">
+        <h5 class="card-title text-center fs-2">MENTIROSO!!!</h5>
+        <div class="mt-5">
+          <form
+            [formGroup]="loginForm"
+            (submit)="login()"
+            class="form-floating"
+          >
+            <input
+              formControlName="userName"
+              type="email"
+              class="form-control is-invalid"
+              id="floatingInputInvalid"
+              placeholder="Introduce tu nombre de usuario"
+              value="test@example.com"
+            />
+            <label for="floatingInputInvalid">Nombre de usuario</label>
+            <div class="d-flex justify-content-center my-5">
+              <button
+                type="submit"
+                class="btn btn-outline-dark text-white border"
+              >
+                Iniciar Sesión
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
