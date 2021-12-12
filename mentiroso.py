@@ -13,11 +13,36 @@ class Carta:
 
 class Baraja:
     
-    def __init__(self):
+    def __init__(self, n_jugadores):
         self.cartas = []
+        self.n_jugadores = n_jugadores
+        self.constructor()
+
+# Crea una baraja ya mezclada
+    def constructor(self): 
+        self.crear_baraja()
+        self.ajustar()
+        self.mezclar()
     
     def mezclar(self):
         random.shuffle(self.cartas)
+
+# Crea una baraja española ordenada con 4 Jokers
+    def crear_baraja(self):
+        for i in range(1, 5):
+            carta = Carta(0, 'Joker')
+            self.cartas.append(carta)
+        for i in range(1, 13):
+            for j in range(4):
+                carta = Carta(i, palos[j])
+                self.cartas.append(carta)
+
+
+# Ajusta el numero de cartas de la baraja dependiendo del numero de jugadores para que todos tengan el mismo numero de cartas
+    def ajustar(self):
+        sobrante = len(self.cartas) % self.n_jugadores
+        for i in range(sobrante):
+            self.cartas.pop(0)    
 
 class Jugador:
     
@@ -26,30 +51,37 @@ class Jugador:
         self.mano = []
         self.mesa = mesa
         self.ganador = False
+        self.ha_comido = False
 
+    # A un jugador se le añaden a su mano todas las cartas que haya jugadas en la mesa
     def comer(self):
-        size = self.mesa.cartas
-        for i in range(size):
-            self.mano.append(self.mesa.cartas[0])
-            self.mesa.cartas.pop(0)
+        for i in self.mesa.cartas:
+            self.mano.append(i)
+        self.mesa.cartas.clear()
         self.descarte()
+        self.ha_comido = True
 
     def ordenar_mano(self):
-        sorted(self.mano, key=lambda carta: carta.numero)
+        self.mano = sorted(self.mano, key=lambda carta: carta.numero)
 
+    # Cuando hay 4 cartas iguales en la mano que no sean Joker, las descarta de la mano y las elimina
     def descarte(self):
-        iguales = 0
+        repetidos = 0
+        localizador = 0
+        numero = None
         self.ordenar_mano()
         for i in range(len(self.mano) - 1):
             if self.mano[i + 1].numero == self.mano[i].numero:
-                iguales += 1
-                if iguales == 3:
-                    #Cuando se borra se sigue sumando i y se queda fuera de rango, hay que borrar sin que interfiera con la i
-                    if self.mano[i].numero != '0':
-                        for j in range(1, 5):
-                            self.mano.pop(i - 3)
+                repetidos += 1
+                if repetidos > 2:
+                    localizador = i
+                    numero = self.mano[localizador].numero
             else:
-                iguales == 0
+                repetidos = 0
+        if repetidos > 2 and numero != '0':
+            for i in range(len(self.mano) - 1, 0):
+                if self.mano[i] == numero:
+                   self.mano.pop(i)
 
 class Jugada:
     
@@ -60,60 +92,83 @@ class Jugada:
         self.palabreo = None
         self.mesa = mesa
 
+    # Se elije si se hace una jugada inicial o jugada no inicial dependiendo del turno que sea
     def ejecutar(self):
         if self.turno == 0:
             self.jugada_inicial()
         else:
             self.jugada_no_inicial()
         self.turno += 1
-        
+
+    # Primero selecciona las cartas que quiere jugar y luego dice que numero es al resto de jugadores 
     def jugada_inicial(self):
         self.seleccionar_cartas()
         self.palabrear()
+        self.check_verdad()
 
     def jugada_no_inicial(self):
         self.adivinar()
         self.check_verdad()
 
+    # Se seleccionan las cartas que se quieren jugar y se guardan en un array. Esas cartas se quitan de la mano del jugador
+    # ! ESTE METODO ES DEL DIABLO. LEERLO ES PELIGROSO
     def seleccionar_cartas(self):
-        print("Qué cartas quiere jugar?")
-        carta = input()
         copia_mano = self.jugador.mano
         borrar = []
+        print("Qué cartas quiere jugar?")        
+        carta = input()
         while carta != 'jugar':
             if len(self.cartas_seleccionadas) < 3:
+                if int(carta) < 0 or int(carta) >= len(self.jugador.mano):
+                    print("Debe introducir un número entre 0 y", str(len(self.jugador.mano) - 1))
+                    print("Qué cartas quiere jugar?")
+                    carta = input()
+                    continue
+                if len(borrar) > 0:
+                    for i in borrar:
+                        if int(carta) == i:
+                            print("Ya se ha seleccionado esta carta, pruebe con otra")
+                            print("Qué cartas quiere jugar?")
+                            carta = input()
+                            break 
+                    continue
                 self.cartas_seleccionadas.append(copia_mano[int(carta)])
                 borrar.append(int(carta))
             else:
                 print('No se pueden jugar más de 3 cartas.')
+            print("Qué cartas quiere jugar?")
             carta = input()
+        restador = 0
         for i in range(len(borrar)):
             if i > 0:
-                if borrar[i] > borrar[i -1]:
-                    self.jugador.mano.pop(int(borrar[i]))
+                if borrar[i] > borrar[i - 1]:
+                    restador += 1
+                    self.jugador.mano.pop(int(borrar[i - restador]))
                 else:
                     self.jugador.mano.pop(int(borrar[i]))
             else:
                 self.jugador.mano.pop(int(borrar[i]))
+        self.mesa.dejar_cartas()
   
     def palabrear(self):
-        print('Qué número dice que es?')
-        self.palabreo = input()
-        self.check_verdad()
+        self.palabreo = input('Qué número dice que es? ')
 
     def check_verdad(self):
         n_cartas = len(self.cartas_seleccionadas)
         for i in range(n_cartas):
             if self.cartas_seleccionadas[i].numero == '0':
                 continue
-            if self.cartas_seleccionadas[i].numero != self.palabreo:
+            if self.verdad and (self.cartas_seleccionadas[i].numero != self.palabreo):
                 self.verdad = False
 
     def adivinar(self):
-        print("Desea levantar?")
-        respuesta = input()
+        respuesta = input("Desea levantar? ")
         if respuesta == 's':
             self.mesa.levantar()
+            if not self.jugador.ha_comido:    
+                self.jugada_inicial()
+            else:
+                self.jugador.ha_comido = False
         elif respuesta == 'n':
             if len(self.mesa.jugador_anterior.mano) == 0:
                 self.mesa.jugador_anterior.ganador = True
@@ -130,7 +185,7 @@ class Mesa:
         self.jugador_anterior = None
 
     def reset(self):
-        self.jugadas = []
+        self.jugadas = [self.jugadas[len(self.jugadas) - 1]]
         self.cartas = []
         self.turno = 0
     
@@ -142,13 +197,17 @@ class Mesa:
             jugada.jugada_inicial()
         else:
             jugada.jugada_no_inicial()
-            ultima_jugada = self.jugadas[len(self.jugadas) - 1]
-            self.jugador_anterior = ultima_jugada.jugador
-        self.dejar_cartas()            
-        self.turno += 1
+            if len(self.jugadas) != 0:
+                ultima_jugada = self.jugadas[len(self.jugadas) - 1]
+                self.jugador_anterior = ultima_jugada.jugador
+        self.pasar_turno()
         
+    def pasar_turno(self):
+        self.jugador_anterior = self.jugador            
+        self.turno += 1
+
     def levantar(self):
-        ultima_jugada = self.jugadas[len(self.jugadas) - 1]
+        ultima_jugada = self.jugadas[len(self.jugadas) - 2]
         if ultima_jugada.verdad:
             self.jugador.comer()
             if len(ultima_jugada.jugador.mano) == 0:
@@ -159,27 +218,32 @@ class Mesa:
 
     def dejar_cartas(self): 
         ultima_jugada = self.jugadas[len(self.jugadas) - 1]
-        n_cartas = len(ultima_jugada.cartas_seleccionadas) 
-        for i in range(n_cartas):
-            self.cartas.append(ultima_jugada.cartas_seleccionadas[0]) 
-            ultima_jugada.cartas_seleccionadas.pop(0)       
+        for i in ultima_jugada.cartas_seleccionadas:
+            self.cartas.append(i)   
 
 class Partida:
     
     def __init__(self):
         self.jugadores = []
-        self.baraja = None 
+        self.baraja = None
         self.mesa = None
         self.crear_partida()
 
     def crear_partida(self):
         self.crear_mesa()
-        self.init_jugadores()
-        self.crear_baraja()
-        self.baraja.mezclar()
+        # self.init_jugadores()
+        self.autoseleccionar_jugadores(3)
+        self.baraja = Baraja(len(self.jugadores))
         self.repartir()
         self.mostrar_manos()
         self.empezar()
+
+    # ** Esta función solo es para pruebas. Selecciona automaticamente n jugadores.
+    def autoseleccionar_jugadores(self, n):
+        nombre = 'A'
+        for i in range(n):
+            jugador = Jugador(chr(ord(nombre) + i), self.mesa)
+            self.jugadores.append(jugador)
 
     def init_jugadores(self):
         i = 1
@@ -193,32 +257,16 @@ class Partida:
             nombre = input()
 
     def repartir(self):
-        numero = len(self.jugadores)
+        numero_jugadores = len(self.jugadores)
         while len(self.baraja.cartas) > 0:
-            for i in range(numero):
+            for i in range(numero_jugadores):
                 self.jugadores[i].mano.append(self.baraja.cartas[0])
                 self.baraja.cartas.pop(0)
-        for i in range(numero):
+        for i in range(numero_jugadores):
             self.jugadores[i].descarte()
-
-    def crear_baraja(self):
-        self.baraja = Baraja()
-        for i in range(1, 5):
-            carta = Carta(0, 'Joker')
-            self.baraja.cartas.append(carta)
-        for i in range(1, 13):
-            for j in range(4):
-                carta = Carta(i, palos[j])
-                self.baraja.cartas.append(carta)
-        self.ajustar()
 
     def crear_mesa(self):
         self.mesa = Mesa()
-
-    def ajustar(self):
-        sobrante = len(self.baraja.cartas) % len(self.jugadores)
-        for i in range(sobrante):
-            self.baraja.cartas.pop(0)
 
     def mostrar_baraja(self):
         length = len(self.baraja.cartas)   
@@ -230,24 +278,24 @@ class Partida:
         for i in range(n_jugadores):
             print(self.jugadores[i].name + ':')
             for j in range(len(self.jugadores[i].mano)):
-                print(self.jugadores[i].mano[j].numero, self.jugadores[i].mano[j].palo)
+                print(j, '-', self.jugadores[i].mano[j].numero, self.jugadores[i].mano[j].palo)
             print(' ')
 
     def empezar(self):
-        seed(1)
         j = len(self.jugadores)
-        indice = randint(0, j)
-        if indice > (len(self.jugadores) - 1):
+        indice = randint(0, j - 1)
+        if indice >= (j - 1):
             indice = - 1
-        print("Empieza " + self.jugadores[indice + 1].name + '!')
+        print("Empieza " + self.jugadores[indice].name + '!')
         self.jugar(indice)
     
     def jugar(self, indice):
-        while not self.hay_ganador():
+        while not self.hay_ganador(): 
+            print('Es el turno de', self.jugadores[indice].name)
+            self.mesa.hacer_jugada(self.jugadores[indice])
+            self.mostrar_manos()
             if indice + 1 > (len(self.jugadores) - 1):
                 indice = -1
-            self.mesa.hacer_jugada(self.jugadores[indice + 1])
-            self.mostrar_manos()
             indice += 1
         if self.hay_ganador():
             self.declarar_ganador()
