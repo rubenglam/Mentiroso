@@ -7,6 +7,9 @@ import { AppComponent } from './app.component';
 import { LoginComponent } from './components/auth/login/login.component';
 import { GameComponent } from './components/game/game.component';
 
+import { SocketIoModule } from 'ngx-socket-io';
+import { CookieService } from 'ngx-cookie-service';
+
 const appRoutes: Routes = [
   { path: '', component: LoginComponent },
   { path: 'game', component: GameComponent, data: { userName: 'userName' } },
@@ -17,11 +20,12 @@ const appRoutes: Routes = [
   imports: [
     BrowserModule,
     FormsModule,
+    SocketIoModule,
     ReactiveFormsModule,
     RouterModule.forRoot(appRoutes),
   ],
   exports: [RouterModule],
-  providers: [],
+  providers: [CookieService],
   bootstrap: [AppComponent],
 })
-export class AppModule {}
+export class AppModule { }

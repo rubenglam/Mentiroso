@@ -1,3 +1,4 @@
 export const environment = {
-  production: true
+  production: true,
+  serverSocket: "http://localhost:4000"
 };
